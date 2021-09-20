@@ -1,0 +1,9 @@
+.venv
+.vscode
+.env
+.vscode
+.pyc
+_build/
+_static/
+_templates/
+__pycache__/
