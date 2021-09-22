@@ -41,7 +41,7 @@ def generate_base_map(default_location: list = [-14, -50],
 class SafetyMap(object):
     def __init__(self, accidents_data_file_path: str, start_point: tuple, end_point: tuple,
                  basemap: Map, sub_section_dist: float = 5., map_save_path="./maps/safety_map.html",
-                 origin_name: str = '', destination_name: str = ''):
+                 origin_name: str = '', destination_name: str = '', icon_color=[]):
         """
         Initializes some important variables
 
@@ -73,6 +73,7 @@ class SafetyMap(object):
         self.map_save_path = map_save_path
         self.origin_name = origin_name
         self.destination_name = destination_name
+        self.icon_color = icon_color
 
     def _treat_accidents_data(self, path: str) -> DataFrame:
         """
@@ -468,6 +469,9 @@ class SafetyMap(object):
         """
         origin_label = ': ' + self.origin_name if self.origin_name else ''
         destination_label = ': ' + self.destination_name if self.destination_name else ''
+        begin_color = self.icon_color or 'green'
+        end_color = self.icon_color or 'red'
+        score_color = self.icon_color or 'blue'
         score = str(np.round(self.score, 2))
         popup = ('<h3 align="center" style="font-size:16px">Route final score: '
                  f'<b>{score}</b></h3>')
@@ -482,11 +486,12 @@ class SafetyMap(object):
                          f'<b>{origin_label}</b></h3>')
         tooltip_end = ('<h3 align="center" style="font-size:14px">Route End Point'
                        f'<b>{destination_label}</b></h3>')
-        (Marker(location=begin, color='green', tooltip=tooltip_begin, popup=f'{begin_formated}',
-                icon=Icon(color='green', icon='fa-truck', prefix='fa')).add_to(self.base_map))
-        (Marker(location=end, color='red', tooltip=tooltip_end, popup=f'{end_formated}',
-                icon=Icon(color='red', icon='fa-truck', prefix='fa')).add_to(self.base_map))
-        Marker(location=marker_pos, popup=popup, tooltip=tooltip).add_to(self.base_map)
+        (Marker(location=begin, tooltip=tooltip_begin, popup=f'{begin_formated}',
+                icon=Icon(color=begin_color, icon='fa-truck', prefix='fa')).add_to(self.base_map))
+        (Marker(location=end, tooltip=tooltip_end, popup=f'{end_formated}',
+                icon=Icon(color=end_color, icon='fa-truck', prefix='fa')).add_to(self.base_map))
+        (Marker(location=marker_pos, tooltip=tooltip, popup=popup,
+                icon=Icon(color=score_color, icon='stats')).add_to(self.base_map))
 
     def _calculate_score_weight(self):
         """
