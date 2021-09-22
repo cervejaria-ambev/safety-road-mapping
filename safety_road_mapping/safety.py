@@ -1,6 +1,6 @@
 from folium import Map
 from folium.features import GeoJson, GeoJsonTooltip
-from folium.map import Marker
+from folium.map import Icon, Marker
 import numpy as np
 from openrouteservice import client
 from pandas.core.frame import DataFrame, Series
@@ -16,11 +16,32 @@ from colour import Color
 import copy
 
 
+def generate_base_map(default_location: list = [-14, -50],
+                      default_zoom_start: Union[int, float] = 4) -> Map:
+    """
+    Generates the basemap where the routes with their safety scores will be plotted.
+
+    Parameters
+    ----------
+    default_location : list, optional
+        Map's default location, by default [-14, -50]
+    default_zoom_start : Union[int, float], optional
+        Default zoom to be applied, by default 4
+
+    Returns
+    -------
+    Map
+        Map object to be used.
+    """
+    return Map(location=default_location, control_scale=True, prefer_canvas=True,
+               zoom_start=default_zoom_start, tiles="cartodbpositron",)
+
+
 @typechecked
 class SafetyMap(object):
-    def __init__(self, accidents_data_file_path: str, start_point: tuple,
-                 end_point: tuple, sub_part_dist: float = 5.,
-                 map_save_path="./maps/safety_map.html"):
+    def __init__(self, accidents_data_file_path: str, start_point: tuple, end_point: tuple,
+                 basemap: Map, sub_section_dist: float = 5., map_save_path="./maps/safety_map.html",
+                 origin_name: str = '', destination_name: str = ''):
         """
         Initializes some important variables
 
@@ -32,41 +53,26 @@ class SafetyMap(object):
             Route start point in the format: (longitude, latitude)
         end_point : tuple
             Route end point in the format: (longitude, latitude)
-        sub_part_dist : float, optional
-            Length of each subpart in the route in km, by default 5.
+        sub_section_dist : float, optional
+            Length of each subsection in the route in km, by default 5.
         map_save_path : str, optional
             Path where the .html file with the route map will be saved, by default
             "./maps/safety_map.html"
+        origin_name : str, optional
+            Name given to the origin point, by default ""
+        destination_name : str, optional
+            Name given to the destination point, by default ""
         """
         config = dotenv_values(".env")
         self.clnt = client.Client(key=config['TOKEN'])
-        self.base_map = self._generate_base_map()
+        self.base_map = basemap
         self.route = self._add_route_to_map(start_point, end_point)
         self.coor_df = self._gen_coordinates_df()
         self.accidents = self._treat_accidents_data(accidents_data_file_path)
-        self.sub_part_dist = sub_part_dist
+        self.sub_section_dist = sub_section_dist
         self.map_save_path = map_save_path
-
-    @staticmethod
-    def _generate_base_map(default_location: list = [-14, -50],
-                           default_zoom_start: Union[int, float] = 4) -> Map:
-        """
-        Generates the basemap where the routes with their safety scores will be plotted.
-
-        Parameters
-        ----------
-        default_location : list, optional
-            Map's default location, by default [-14, -50]
-        default_zoom_start : Union[int, float], optional
-            Default zoom to be applied, by default 4
-
-        Returns
-        -------
-        Map
-            Map object to be used.
-        """
-        return Map(location=default_location, control_scale=True,
-                   prefer_canvas=True, zoom_start=default_zoom_start, tiles="cartodbpositron",)
+        self.origin_name = origin_name
+        self.destination_name = destination_name
 
     def _treat_accidents_data(self, path: str) -> DataFrame:
         """
@@ -88,7 +94,6 @@ class SafetyMap(object):
                                              .astype('float'))
         self.accidents.loc[:, 'longitude'] = (self.accidents['longitude'].str.replace(',', '.')
                                               .astype('float'))
-
         l1 = list(self.accidents.query('longitude > 0').index)
         l2 = list(self.accidents.query('longitude < -75').index)
         self.accidents = self.accidents.drop(labels=l1+l2)
@@ -149,16 +154,16 @@ class SafetyMap(object):
         """
         Generate coordinates DataFrame based on route dictionary. This method gets the coordinates
         and extracts the latitude and longitude.
-        It also calculates the distante between point in the route to generate the subparts and
+        It also calculates the distante between point in the route to generate the subsections and
         categorize them in groups. The coord_df contains the distance between coordinates to
-        calculate the parts of the route.
+        calculate the sections of the route.
 
         Returns
         -------
         DataFrame
             Coordinates DataFrame with the route's latitude and longitude, also it has the distance
             between the coordinate and the subsequent point. Based on the cumulative distance the
-            route's subparts are created.
+            route's subsections are created.
         """
         coor = self.route['features'][0]['geometry']['coordinates']
         self.coor_df = pd.DataFrame(coor).rename(columns={0: 'olong', 1: 'olat'})
@@ -178,38 +183,38 @@ class SafetyMap(object):
                                            .cumsum())
         return self.coor_df
 
-    def _gen_parts(self) -> DataFrame:
+    def _gen_sections(self) -> DataFrame:
         """
-        Method to create intervals with step `self.sub_part_dist`. Each group is one subpart of the
+        Method to create intervals with step `self.sub_section_dist`. Each group is one subsection of the
         route.
 
         Returns
         -------
         DataFrame
-            Parts DataFrame with the following information: coordinates' latitude and longitude,
-            cum_sum_min (the minimum distance of that route part), cum_sum_max (the maximum
-            distance of that route part), parts (the first km and the last km included in that part,
-            origin (part first coordinate), destination (part last coordinate))
+            sections DataFrame with the following information: coordinates' latitude and longitude,
+            cum_sum_min (the minimum distance of that route section), cum_sum_max (the maximum
+            distance of that route section), sections (the first km and the last km included in that section,
+            origin (section first coordinate), destination (section last coordinate))
         """
         max_dis = self.coor_df['cum_sum'].max()
-        interval = pd.interval_range(start=0, end=max_dis + self.sub_part_dist,
-                                     freq=self.sub_part_dist, closed='left')
-        self.coor_df['parts'] = pd.cut(self.coor_df['cum_sum'], bins=interval)
-        coor_sum_min = (self.coor_df.groupby(by='parts').agg({'cum_sum': 'min'})
+        interval = pd.interval_range(start=0, end=max_dis + self.sub_section_dist,
+                                     freq=self.sub_section_dist, closed='left')
+        self.coor_df['sections'] = pd.cut(self.coor_df['cum_sum'], bins=interval)
+        coor_sum_min = (self.coor_df.groupby(by='sections').agg({'cum_sum': 'min'})
                         .reset_index().rename(columns={'cum_sum': 'cum_sum_min'}))
-        coor_sum_max = (self.coor_df.groupby(by='parts').agg({'cum_sum': 'max'})
+        coor_sum_max = (self.coor_df.groupby(by='sections').agg({'cum_sum': 'max'})
                         .reset_index().rename(columns={'cum_sum': 'cum_sum_max'}))
-        cols_min = ['parts', 'cum_sum_min', 'olong', 'olat', 'origin_tuple']
+        cols_min = ['sections', 'cum_sum_min', 'olong', 'olat', 'origin_tuple']
         cols_max = ['cum_sum_max' if i == 'cum_sum_min' else i for i in cols_min]
         coor_sum_min = (coor_sum_min.merge(self.coor_df, left_on='cum_sum_min',
                                            right_on='cum_sum')
-                        .rename(columns={'parts_x': 'parts'})[cols_min])
+                        .rename(columns={'sections_x': 'sections'})[cols_min])
         coor_sum_max = (coor_sum_max.merge(self.coor_df, left_on='cum_sum_max',
                                            right_on='cum_sum')
-                        .rename(columns={'parts_x': 'parts'})[cols_max])
+                        .rename(columns={'sections_x': 'sections'})[cols_max])
         rename_dict = {'olong_x': 'olong',	'olat_x': 'olat', 'origin_tuple_x': 'origin',
                        'olong_y': 'dlong', 'olat_y': 'dlat', 'origin_tuple_y': 'destination'}
-        return coor_sum_min.merge(coor_sum_max, on='parts').rename(columns=rename_dict)
+        return coor_sum_min.merge(coor_sum_max, on='sections').rename(columns=rename_dict)
 
     @staticmethod
     def _normalize_string(string: str) -> str:
@@ -233,7 +238,7 @@ class SafetyMap(object):
 
     def _classes_accidents(self, accident: str) -> int:
         """
-        Creates a score for the route's part. Those scores are arbitrary and can be tuned for what
+        Creates a score for the route's section. Those scores are arbitrary and can be tuned for what
         makes more sense
 
         Parameters
@@ -278,7 +283,9 @@ class SafetyMap(object):
         max_olat = np.round(self.coor_df['olat'].max(), 3)
         query = (f'({min_olat} <= latitude <= {max_olat}) and '
                  f'({min_olong} <= longitude <= {max_olong})')
-        self.accidents = self.accidents.query(query)
+        filtered = self.accidents.query(query)
+        if not filtered.empty:
+            self.accidents = filtered
         return self.accidents
 
     @staticmethod
@@ -330,33 +337,33 @@ class SafetyMap(object):
         c = 2. * np.arctan2(np.sqrt(a), np.sqrt(1. - a))
         return radius * c
 
-    def _rank_subparts(self, df: DataFrame, flag: str) -> DataFrame:
+    def _rank_subsections(self, df: DataFrame, flag: str) -> DataFrame:
         """
-        Generates the score for each route subpart.
+        Generates the score for each route subsection.
 
         Parameters
         ----------
         df : DataFrame
-            DataFrame with coordinate, subparts and distances
+            DataFrame with coordinate, subsections and distances
         flag : str
             Flag to indicate if df rows represent each point in the route or if they are the route's
-            subparts. Possible values are: 'point' ou 'route'
+            subsections. Possible values are: 'point' ou 'route'
 
         Returns
         -------
         DataFrame
-            DataFrame with the scores for the route's parts
+            DataFrame with the scores for the route's sections
 
         Raises
         ------
         Exception
             If the flag is not set to 'point' or 'route'
         """
-        last_val = int(df['parts'].values[-1].right)
+        last_val = int(df['sections'].values[-1].right)
         rank_df_list = []
-        for i in range(0, last_val, int(self.sub_part_dist)):
+        for i in range(0, last_val, int(self.sub_section_dist)):
             interval = Interval(float(i), float(i + 5.0), closed='left')
-            filtered_route = self.route_df[self.route_df['parts'] == interval]
+            filtered_route = self.route_df[self.route_df['sections'] == interval]
             rank_accidents = self.score_accidents.copy()
             distances_list = []
             for _, row in filtered_route.iterrows():
@@ -364,11 +371,11 @@ class SafetyMap(object):
                                             self.score_accidents.loc[:, 'latitude'],
                                             self.score_accidents.loc[:, 'longitude'])
                 distances_list.append(distances)
-            filtered_parts = df[df['parts'] == interval]
+            filtered_sections = df[df['sections'] == interval]
             if flag == 'point':
-                rank_df = filtered_parts[['parts', 'origin', 'destination']]
+                rank_df = filtered_sections[['sections', 'origin', 'destination']]
             elif flag == 'route':
-                rank_df = filtered_parts[['parts', 'origin_tuple']]
+                rank_df = filtered_sections[['sections', 'origin_tuple']]
             else:
                 raise Exception("The flag used is not a valid option!!!")
             distances_list.append(rank_accidents['score'])
@@ -380,44 +387,48 @@ class SafetyMap(object):
 
     def _getcolor(self, rank: float) -> str:
         """
-        Generates the color for the subpart on the route based on its score.
+        Generates the color for the subsection on the route based on its score.
 
         Parameters
         ----------
         rank : float
-            Subpart's score
+            Subsection's score
 
         Returns
         -------
         str
-            Hexadecimal color or grey if the subpart has no score.
+            Hexadecimal color or grey if the subsection has no score.
         """
-        max_score = int(np.ceil(self.final_rank_parts['score'].max()))
-        colors = list(Color('green').range_to(Color('red'), max_score))
-        colors = [color.get_web() for color in colors]
-        if rank == 0:
+        max_score = int(np.ceil(self.final_rank_sections['score'].max()))
+        try:
+            colors = list(Color('green').range_to(Color('red'), max_score))
+        except ValueError:
             return 'grey'
         else:
-            return colors[int(rank)]
+            colors = [color.get_web() for color in colors]
+            if rank == 0:
+                return 'grey'
+            else:
+                return colors[int(rank)]
 
     def _plot_route_score(self):
         """
-        Plots the subparts in the route on the map with different colors based on the the score of
-        each subpart.
+        Plots the subsections in the route on the map with different colors based on the the score
+        of each subsection.
         """
         rank_json = copy.deepcopy(self.route)
         properties = rank_json['features'][0]['properties']
         rank_json['features'] = []
-        last_val = int(self.parts_df['parts'].values[-1].right)
+        last_val = int(self.sections_df['sections'].values[-1].right)
         p_type = 'Feature'
-        for i in range(0, last_val, int(self.sub_part_dist)):
+        for i in range(0, last_val, int(self.sub_section_dist)):
             interval = Interval(float(i), float(i) + 5.0, closed='left')
-            subpart = self.final_rank_route[self.final_rank_route['parts'] == interval]
-            coor_list = subpart['origin_tuple'].apply(lambda x: list(x[::-1])).to_list()
+            subsection = self.final_rank_route[self.final_rank_route['sections'] == interval]
+            coor_list = subsection['origin_tuple'].apply(lambda x: list(x[::-1])).to_list()
             bbox = self.route['bbox']
             id = str(i)
-            rank_value = int(subpart['score'].unique()[0])
-            color = subpart['score'].apply(self._getcolor).unique()[0]
+            rank_value = int(subsection['score'].unique()[0])
+            color = subsection['score'].apply(self._getcolor).unique()[0]
             properties['score'] = rank_value
             properties['color'] = color
             append_dict = {'bbox': bbox, 'type': p_type, 'properties': properties,
@@ -429,14 +440,14 @@ class SafetyMap(object):
                 style_function=lambda x: {'color': x['properties']['color'], 'weight': 5,
                                           'fillOpacity': 1},
                 highlight_function=lambda x: {'weight': 10, 'color': x['properties']['color']},
-                tooltip=GeoJsonTooltip(fields=['score'], aliases=["Part risk's score: "],
+                tooltip=GeoJsonTooltip(fields=['score'], aliases=["section risk's score: "],
                                        labels=True, sticky=True,
                                        toLocaleString=True)).add_to(self.base_map)
         self.base_map.save(self.map_save_path)
 
     def _calculate_final_score(self) -> float:
         """
-        Calculates the route's final score. To do this the scores of each subpart are summed and
+        Calculates the route's final score. To do this the scores of each subsection are summed and
         them divided by the route distance in kilometers. This is a way to normalize the final
         score. So, if two routes have the same summed score, the smaller one will have the higher
         final score.
@@ -446,7 +457,7 @@ class SafetyMap(object):
         float
             The final score calculated as stated above.
         """
-        sum_score = self.final_rank_parts['score'].sum()
+        sum_score = self.final_rank_sections['score'].sum()
         self.score = sum_score / (self.route_distance / 1000)
         return self.score
 
@@ -455,12 +466,26 @@ class SafetyMap(object):
         Plots the final score on a marker on the map. To open the popup with the message, the user
         needs to click in the marker located approximately on the middle of the route.
         """
+        origin_label = ': ' + self.origin_name if self.origin_name else ''
+        destination_label = ': ' + self.destination_name if self.destination_name else ''
         score = str(np.round(self.score, 2))
         popup = ('<h3 align="center" style="font-size:16px">Route final score: '
                  f'<b>{score}</b></h3>')
         tooltip = '<strong>Click here to see route score</strong>'
         middle_pos = int(len(self.final_rank_route) / 2)
         marker_pos = self.final_rank_route.loc[middle_pos, 'origin_tuple']
+        begin = self.final_rank_route.loc[0, 'origin_tuple']
+        begin_formated = tuple(map(lambda coor: round(coor, 3), begin))
+        end = self.final_rank_route.loc[len(self.final_rank_route) - 1, 'origin_tuple']
+        end_formated = tuple(map(lambda coor: round(coor, 3), end))
+        tooltip_begin = ('<h3 align="center" style="font-size:14px">Route Begin Point'
+                         f'<b>{origin_label}</b></h3>')
+        tooltip_end = ('<h3 align="center" style="font-size:14px">Route End Point'
+                       f'<b>{destination_label}</b></h3>')
+        (Marker(location=begin, color='green', tooltip=tooltip_begin, popup=f'{begin_formated}',
+                icon=Icon(color='green', icon='fa-truck', prefix='fa')).add_to(self.base_map))
+        (Marker(location=end, color='red', tooltip=tooltip_end, popup=f'{end_formated}',
+                icon=Icon(color='red', icon='fa-truck', prefix='fa')).add_to(self.base_map))
         Marker(location=marker_pos, popup=popup, tooltip=tooltip).add_to(self.base_map)
 
     def _calculate_score_weight(self):
@@ -477,7 +502,7 @@ class SafetyMap(object):
 
     def path_risk_score(self, save_map: bool = False) -> DataFrame:
         """
-        This method call the others above to generate the suparts, calculate the scores and plot
+        This method call the others above to generate the subsections, calculate the scores and plot
         all on the map
 
         Parameters
@@ -488,7 +513,7 @@ class SafetyMap(object):
         Returns
         -------
         DataFrame
-            Final DataFrame with the score for each subpart on the route.
+            Final DataFrame with the score for each subsection on the route.
         """
         self.score_accidents = self.accidents[['data_inversa', 'latitude', 'longitude',
                                                'classificacao_acidente']]
@@ -500,17 +525,17 @@ class SafetyMap(object):
         self._calculate_score_weight()
         self.score_accidents['lat_long'] = (list(self.score_accidents[['latitude', 'longitude']]
                                                  .itertuples(index=False, name=None)))
-        self.parts_df = self._gen_parts()
-        self.route_df = self.coor_df[['origin_tuple', 'destination_tuple', 'parts']]
-        self.final_rank_parts = self._rank_subparts(self.parts_df, flag='point')
-        self.final_rank_route = self._rank_subparts(self.coor_df, flag='route')
+        self.sections_df = self._gen_sections()
+        self.route_df = self.coor_df[['origin_tuple', 'destination_tuple', 'sections']]
+        self.final_rank_sections = self._rank_subsections(self.sections_df, flag='point')
+        self.final_rank_route = self._rank_subsections(self.coor_df, flag='route')
         self._calculate_final_score()
         print(f'The final route score is {self.score:.2f}.')
         if save_map:
             print('Plotting route and final score on map...')
             self._plot_final_score()
             self._plot_route_score()
-        return self.final_rank_parts
+        return self.final_rank_sections
 
 
 if __name__ == "__main__":
