@@ -6,8 +6,7 @@ This project uses [openrouteservice API](https://openrouteservice.org) to plot m
 So the following steps are necessary at first:
 
 1. Sign up on [openrouteservice.org](https://openrouteservice.org/dev/#/signup) to generate an API token;
-2. Rename the `.env.example` file inside `safety_road_mapping/` folder to `.env`;
-3. Insert the generated token in the front of `TOKEN=`.
+2. Create a `.env` file with the following content: `TOKEN=XXXXXXXXXXXXXXX`, where `XXXXXXXXXXXXXXX` is the token generated in the step before;
 
 ## Accident road data
 

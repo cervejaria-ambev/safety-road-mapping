@@ -7,13 +7,15 @@ from pandas.core.frame import DataFrame, Series
 from pandas import Interval
 from typeguard import typechecked
 from typing import Union
-from dotenv import dotenv_values
 import math
 import pandas as pd
 from geopy import distance
 import unidecode
 from colour import Color
 import copy
+from pathlib import Path
+from dotenv import load_dotenv
+import os
 
 
 def generate_base_map(default_location: list = [-14, -50],
@@ -40,8 +42,9 @@ def generate_base_map(default_location: list = [-14, -50],
 @typechecked
 class SafetyMap(object):
     def __init__(self, accidents_data_file_path: str, start_point: tuple, end_point: tuple,
-                 basemap: Map, sub_section_dist: float = 5., map_save_path="./maps/safety_map.html",
-                 origin_name: str = '', destination_name: str = '', icon_color=[]):
+                 basemap: Map, sub_section_dist: float = 5., env_path: str = '.env',
+                 map_save_path: str = "./maps/safety_map.html", color_value: int = None,
+                 origin_name: str = '', destination_name: str = ''):
         """
         Initializes some important variables
 
@@ -53,18 +56,36 @@ class SafetyMap(object):
             Route start point in the format: (longitude, latitude)
         end_point : tuple
             Route end point in the format: (longitude, latitude)
+        basemap : Map
+            Map where the routes will be plotted
         sub_section_dist : float, optional
             Length of each subsection in the route in km, by default 5.
+        env_path : str, optional
+            Path to .env file, default ".env"
         map_save_path : str, optional
             Path where the .html file with the route map will be saved, by default
             "./maps/safety_map.html"
+        color_value : int, optional
+            Color to use on the icons in the map. This is special useful when you are plotting
+            more routes in the same map. By default None
+            You have to pass an integer between 0 and 18 as a dictionary key:
+            {0: 'red', 1: 'lightred', 2: 'darkblue', 3: 'orange', 4: 'darkgreen',
+             5: 'cadetblue', 6: 'purple', 7: 'black', 8: 'gray', 9: 'lightblue',
+             10: 'beige', 11: 'lightgray', 12: 'lightgreen', 13: 'blue', 14: 'pink',
+             15: 'darkpurple', 16: 'green', 17: 'white', 18: 'darkred'}
         origin_name : str, optional
             Name given to the origin point, by default ""
         destination_name : str, optional
             Name given to the destination point, by default ""
         """
-        config = dotenv_values(".env")
-        self.clnt = client.Client(key=config['TOKEN'])
+        color_dict = {0: 'red', 1: 'lightred', 2: 'darkblue', 3: 'orange', 4: 'darkgreen',
+                      5: 'cadetblue', 6: 'purple', 7: 'black', 8: 'gray', 9: 'lightblue',
+                      10: 'beige', 11: 'lightgray', 12: 'lightgreen', 13: 'blue', 14: 'pink',
+                      15: 'darkpurple', 16: 'green', 17: 'white', 18: 'darkred'}
+        dotenv_path = Path(env_path)
+        load_dotenv(dotenv_path=dotenv_path)
+        TOKEN = os.getenv('TOKEN')
+        self.clnt = client.Client(key=TOKEN)
         self.base_map = basemap
         self.route = self._add_route_to_map(start_point, end_point)
         self.coor_df = self._gen_coordinates_df()
@@ -73,7 +94,7 @@ class SafetyMap(object):
         self.map_save_path = map_save_path
         self.origin_name = origin_name
         self.destination_name = destination_name
-        self.icon_color = icon_color
+        self.icon_color = color_dict.get(color_value)
 
     def _treat_accidents_data(self, path: str) -> DataFrame:
         """
