@@ -6,25 +6,10 @@
 
 # -- Path setup --------------------------------------------------------------
 
-from folium import Map
-from folium.features import GeoJson, GeoJsonTooltip
-from folium.map import Marker
-import numpy as np
-from openrouteservice import client
-from pandas.core.frame import DataFrame, Series
-from pandas import Interval
-from typeguard import typechecked
-from typing import Union
-from dotenv import dotenv_values
-import math
-import pandas as pd
-from geopy import distance
-import unidecode
-from colour import Color
-import copy
+
 import sys
 import os
-from mock import Mock as MagicMock
+
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
