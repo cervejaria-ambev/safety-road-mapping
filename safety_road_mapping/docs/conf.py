@@ -12,14 +12,11 @@ import sphinx.builders.texinfo
 import sphinx.builders.text
 import sphinx.ext.autodoc
 import sys
-import mock
 import os
 
-MOCK_MODULES = ['folium', 'folium.features', 'folium.map', 'numpy', 'openrouteservice',
-                'pandas.core.frame', 'pandas', 'typeguard', 'typing', 'geopy', 'unidecode',
-                'colour', 'pathlib', 'dotenv']
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.MagicMock()
+autodoc_mock_imports = ['folium', 'numpy', 'openrouteservice', 'pandas', 'typeguard', 'typing',
+                        'geopy', 'unidecode', 'colour', 'pathlib', 'dotenv']
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
