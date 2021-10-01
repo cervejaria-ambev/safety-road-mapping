@@ -9,13 +9,10 @@
 
 import sys
 import os
-import mock
 
-MOCK_MODULES = ['folium', 'folium.features', 'folium.map', 'numpy', 'openrouteservice',
-                'pandas.core.frame', 'pandas', 'typeguard', 'typing', 'geopy', 'unidecode',
-                'colour', 'pathlib', 'dotenv']
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.Mock()
+autodoc_mock_imports = ['folium', 'folium.features', 'folium.map', 'numpy', 'openrouteservice',
+                        'pandas.core.frame', 'pandas', 'typeguard', 'typing', 'geopy', 'unidecode',
+                        'colour', 'pathlib', 'dotenv']
 
 
 # If extensions (or modules to document with autodoc) are in another directory,
