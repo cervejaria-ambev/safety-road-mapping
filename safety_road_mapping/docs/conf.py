@@ -26,18 +26,6 @@ import sys
 import os
 from mock import Mock as MagicMock
 
-
-class Mock(MagicMock):
-    @classmethod
-    def __getattr__(cls, name):
-        return MagicMock()
-
-
-MOCK_MODULES = ['folium', 'folium.features', 'folium.map', 'numpy', 'openrouteservice', 'geopy',
-                'pandas.core.frame', 'pandas', 'typeguard', 'typing', 'dotenv', 'math', 'pandas',
-                'unidecode', 'colour', 'copy']
-sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -54,9 +42,17 @@ project = 'Safety Road Mapping'
 copyright = '2021, Gabriel Aparecido Fonseca'
 author = 'Gabriel Aparecido Fonseca'
 
-# The full version, including alpha/beta/rc tags
-release = '1'
 
+# The full version, including alpha/beta/rc tags
+def get_version():
+    import re
+    toml_file = open('../../pyproject.toml').read()
+    return re.findall(r'(?<=version = ").*(?="\n)', toml_file)[0]
+
+
+version = get_version()
+release = version
+print(f'Version: {release}')
 
 # -- General configuration ---------------------------------------------------
 
