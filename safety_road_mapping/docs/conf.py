@@ -5,17 +5,15 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 # -- Path setup --------------------------------------------------------------
-
-
+# prevent circular imports...
+import sphinx.builders.html
+import sphinx.builders.latex
+import sphinx.builders.texinfo
+import sphinx.builders.text
+import sphinx.ext.autodoc
 import sys
 import mock
 import os
-
-MOCK_MODULES = ['folium', 'folium.features', 'folium.map', 'numpy', 'openrouteservice',
-                'pandas.core.frame', 'pandas', 'typeguard', 'typing', 'geopy', 'unidecode',
-                'colour', 'pathlib', 'dotenv']
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.MagicMock()
 
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -51,6 +49,13 @@ print(f'Version: {release}')
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.coverage',
+              'sphinx.ext.napoleon', 'sphinx.ext.viewcode']
+
+napoleon_google_docstring = False
+napoleon_use_param = False
+napoleon_use_ivar = True
+add_module_names = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

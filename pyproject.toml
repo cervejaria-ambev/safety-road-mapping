@@ -32,6 +32,7 @@ plotly = "^5.2.2"
 Unidecode = "^1.2.0"
 colour = "^0.1.5"
 typeguard = "^2.12.1"
+typing-extensions = "^3.10.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
