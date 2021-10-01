@@ -51,13 +51,6 @@ print(f'Version: {release}')
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.builders.epub3', 'sphinx.ext.autodoc', 'sphinx.ext.coverage',
-              'sphinx.ext.napoleon', 'sphinx.ext.viewcode']
-
-napoleon_google_docstring = False
-napoleon_use_param = False
-napoleon_use_ivar = True
-add_module_names = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
