@@ -15,7 +15,7 @@ MOCK_MODULES = ['folium', 'folium.features', 'folium.map', 'numpy', 'openroutese
                 'pandas.core.frame', 'pandas', 'typeguard', 'typing', 'geopy', 'unidecode',
                 'colour', 'pathlib', 'dotenv']
 for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.Mock()
+    sys.modules[mod_name] = mock.MagicMock()
 
 
 # If extensions (or modules to document with autodoc) are in another directory,
