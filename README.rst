@@ -14,24 +14,44 @@ following steps are necessary at first:
 2. Create a ``.env`` file with the following content:
    ``TOKEN=XXXXXXXXXXXXXXX``, where ``XXXXXXXXXXXXXXX`` is the token
    generated in the step before;
+3. Install the lib: ``pip install safety-road-mapping``
+4. Get the road accidents according the instructions bellow: `Getting
+   accident road data <#getting-accident-road-data>`__
+5. See the documentation on: `safety
+   documentation <\docs\safety_road_mapping\safety.md>`__
+6. See the examples on how to use the lib on:
+   `how-to-use.ipynb <.\safety_road_mapping\examples\how-to-use.ipynb>`__
 
-Accident road data
-------------------
+Getting accident road data
+--------------------------
 
-The accidents data used were extracted from the Polícia Rodoviária
-Federal website. The notebook ``get_data.ipynb`` inside
-``safety_road_mapping/notebooks`` folder is responsible to download and
-extract the data used. If you want to directly download the files you
-can `click
-here <https://www.gov.br/prf/pt-br/acesso-a-informacao/dados-abertos/dados-abertos-acidentes>`__.
+-  The accidents data used were extracted from the `Polícia Rodoviária
+   Federal website <https://www.gov.br/prf/pt-br>`__.
+-  The notebook
+   `get\_data.ipynb <.\safety_road_mapping\extract_data\get_data.ipynb>`__
+   is responsible to download and extract the data used.
+-  If you want to directly download the files you can `click
+   here <https://www.gov.br/prf/pt-br/acesso-a-informacao/dados-abertos/dados-abertos-acidentes>`__.
+-  To consolidate all the accidents by year on an unique ``.csv`` file
+   use the notebook
+   `consolidate\_data.ipynb <.\safety_road_mapping\extract_data\consolidate_data.ipynb>`__.
+-  For a simple explore data analysis from the data look at
+   `eda\_accidents.ipynb <.\safety_road_mapping\extract_data\eda_accidents.ipynb>`__
 
-Roadmap
--------
+Other possible steps on the project
+-----------------------------------
 
 -  The accidents data used comes just from federal police source, so
    there are some routes that don't receive score because they are state
    highways.
+-  Create some unit tests.
+-  Use
+   `Renaest <https://www.gov.br/infraestrutura/pt-br/assuntos/transito/arquivos-denatran/docs/renaest>`__
+   data (currently only `SP has geolocation
+   data <http://www.infosiga.sp.gov.br>`__).
+-  Include other variables in the score calculation.
+-  Include driver behaviors data.
+-  Implement an algorithm to predict accidents.
 -  The routes subsections are not connected, once they are plotted
    individually in the map. Visually it can be interesting to connect
-   them. (Is it possible or necessary?)
-
+   them. (Is it possible or necessary?).

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "safety-road-mapping"
-version = "0.1.4"
+version = "0.1.5"
 description = "Module to generate a safety score for brazilian roads."
 authors = ["Gabriel Aparecido Fonseca"]
 
@@ -41,9 +41,7 @@ bs4 = "^0.0.1"
 flake8 = "^3.9.2"
 wget = "^3.2"
 pyunpack = "^0.2.2"
-Sphinx = "^4.2.0"
-mock = "^4.0.3"
-sphinx-rtd-theme = "^1.0.0"
+pdoc3 = "^0.10.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
