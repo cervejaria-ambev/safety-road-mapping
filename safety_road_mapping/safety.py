@@ -111,7 +111,17 @@ class SafetyMap(object):
         DataFrame
             Treated accidents DataFrame
         """
-        self.accidents = pd.read_csv(path, encoding='latin1', sep=';')
+        dtype_dict = {'data_inversa': np.dtype('O'), 'dia_semana': np.dtype('O'),
+                      'horario': np.dtype('O'), 'uf': np.dtype('O'), 'br': np.dtype('O'),
+                      'km': np.dtype('O'), 'municipio': np.dtype('O'),
+                      'causa_acidente': np.dtype('O'), 'tipo_acidente': np.dtype('O'),
+                      'classificacao_acidente': np.dtype('O'), 'fase_dia': np.dtype('O'),
+                      'sentido_via': np.dtype('O'), 'condicao_metereologica': np.dtype('O'),
+                      'tipo_pista': np.dtype('O'), 'tracado_via': np.dtype('O'),
+                      'pessoas': np.dtype('int64'), 'mortos': np.dtype('int64'),
+                      'feridos_graves': np.dtype('int64'), 'latitude': np.dtype('O'),
+                      'longitude': np.dtype('O')}
+        self.accidents = pd.read_csv(path, encoding='latin1', sep=';', dtype=dtype_dict)
         self.accidents.loc[:, 'latitude'] = (self.accidents['latitude'].str.replace(',', '.')
                                              .astype('float'))
         self.accidents.loc[:, 'longitude'] = (self.accidents['longitude'].str.replace(',', '.')
@@ -207,16 +217,16 @@ class SafetyMap(object):
 
     def _gen_sections(self) -> DataFrame:
         """
-        Method to create intervals with step `self.sub_section_dist`. Each group is one subsection of the
-        route.
+        Method to create intervals with step `self.sub_section_dist`. Each group is one subsection
+        of the route.
 
         Returns
         -------
         DataFrame
             sections DataFrame with the following information: coordinates' latitude and longitude,
             cum_sum_min (the minimum distance of that route section), cum_sum_max (the maximum
-            distance of that route section), sections (the first km and the last km included in that section,
-            origin (section first coordinate), destination (section last coordinate))
+            distance of that route section), sections (the first km and the last km included in
+            that section, origin (section first coordinate), destination (section last coordinate))
         """
         max_dis = self.coor_df['cum_sum'].max()
         interval = pd.interval_range(start=0, end=max_dis + self.sub_section_dist,
@@ -260,8 +270,8 @@ class SafetyMap(object):
 
     def _classes_accidents(self, accident: str) -> int:
         """
-        Creates a score for the route's section. Those scores are arbitrary and can be tuned for what
-        makes more sense
+        Creates a score for the route's section. Those scores are arbitrary and can be tuned for
+        what makes more sense
 
         Parameters
         ----------
@@ -572,8 +582,11 @@ if __name__ == "__main__":
     # Nova Rio: -22.864365417300693, -43.60680685910165
     inicio = (-46.35471817331918, -22.864969298862736)
     fim = (-43.60680685910165, -22.864365417300693)
-    data_path = "accidents_data.csv"
-    s = SafetyMap(data_path, inicio, fim)
+    data_path = "./extract_data/accidents_final.csv"
+    basemap = generate_base_map()
+    s = SafetyMap(accidents_data_file_path=data_path, start_point=inicio, end_point=fim,
+                  basemap=basemap, map_save_path="./maps/teste_com_dados2.html",
+                  env_path='./.env')
     s.path_risk_score(save_map=True)
     t1 = time.time()
     print(f'Tempo necessário: {t1 - t0} segundos')

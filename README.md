@@ -20,6 +20,13 @@ So the following steps are necessary at first:
 - To consolidate all the accidents by year on an unique `.csv` file use the notebook [consolidate_data.ipynb](./safety_road_mapping/extract_data/consolidate_data.ipynb).
 - For a simple explore data analysis from the data look at [eda_accidents.ipynb](./safety_road_mapping/extract_data/eda_accidents.ipynb)
 
+### Adding São Paulo data
+
+- Access the [infosiga website](http://www.respeitoavida.sp.gov.br/relatorios/)
+- Download the xlsx file with fatal accidents: [Fatal accidents](http://painelderesultados.infosiga.sp.gov.br/bases/acidentes_fatais.xlsx)
+- Download the csv file with non fatal accidents: [Non-fatal accidents](http://painelderesultados.infosiga.sp.gov.br/bases/acidentes_naofatais.csv)
+- Use the notebook [treat_data_from_SP.ipynb](./safety_road_mapping/extract_data/treat_data_from_SP.ipynb) to transform and concatenate the data generating a final file that will be used as input for the safety map code.
+
 ## Other possible steps on the project
 
 - The accidents data used comes just from road federal police source, so there are some routes that don't receive score because they are state highways.
