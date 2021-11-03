@@ -528,12 +528,14 @@ class SafetyMap(object):
         """
         Calculates the weight to multiply the class score based on how many days the accident
         occurred from the last date in the dataset. If the accident is recent the weight is near 1,
-        if it occurred long time ago the weight is near 0.
+        if it occurred long time ago the weight is near 0.1.
         """
         W_max = self.score_accidents['days_from_accident'].max()
         W_min = self.score_accidents['days_from_accident'].min()
         self.score_accidents['W'] = ((W_max - self.score_accidents['days_from_accident']) /
                                      (W_max - W_min))
+        self.score_accidents['W'] = self.score_accidents['W'].apply(lambda x: x + 0.1
+                                                                    if x == 0 else x)
         self.score_accidents['score'] = self.score_accidents['classes'] * self.score_accidents['W']
 
     def path_risk_score(self, save_map: bool = False) -> DataFrame:
